@@ -10,7 +10,7 @@
 |:---:|:---:|
 | ![亮色白玻璃预览](docs/preview-light.png) | ![暗色高透玻璃预览](docs/preview-dark.png) |
 
-*↑ 配方活体参照页实拍，右上角一键切换主题——[在线交互预览](https://2021291696.github.io/glassify/)*
+*↑ 配方活体参照页实拍，右上角一键切换主题——[在线交互预览](https://solplum.github.io/glassify/)*
 
 ## 触发
 
@@ -22,7 +22,7 @@
 
 ## 在线演示
 
-**👉 [配方参考页（GitHub Pages 在线预览）](https://2021291696.github.io/glassify/)** —— 右上角切换亮色白玻璃 / 暗色高透玻璃双主题，含暗色铁律 ✅/❌ 对照样品、保持实色元素示例与玻璃化判定表。源码在 [`docs/index.html`](./docs/index.html)，全部内联零依赖，可直接抄走配方。
+**👉 [配方参考页（GitHub Pages 在线预览）](https://solplum.github.io/glassify/)** —— 右上角切换亮色白玻璃 / 暗色高透玻璃双主题，含暗色铁律 ✅/❌ 对照样品、保持实色元素示例与玻璃化判定表。源码在 [`docs/index.html`](./docs/index.html)，全部内联零依赖，可直接抄走配方。
 
 ## 流程（两段式确认）
 
@@ -53,7 +53,7 @@ exam-prep skill（备考刷题）的页面模板 quiz-template-v2 同样采用�
 实体 + junction / 复制均可，放进你的 agent skills 目录即可：
 
 ```bash
-git clone https://github.com/2021291696/glassify.git
+git clone https://github.com/solplum/glassify.git
 cp glassify/SKILL.md <你的-agent>/skills/glassify/SKILL.md
 ```
 
