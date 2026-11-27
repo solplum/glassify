@@ -1,11 +1,12 @@
 ---
 name: glassify
-description: Glassify existing frontend projects (vanilla CSS / Tailwind / Flutter) into glassmorphism — 将已有前端项目改造为玻璃拟态 glassmorphism 风格（毛玻璃/磨砂/frosted glass 效果）。Triggers: glassify, glassmorphism, frosted glass, glass UI, glass effect, liquid glass, 玻璃化, 玻璃拟态, 上玻璃, 毛玻璃, 磨砂。边界：只改造已有项目，不做从零新建。流程：出方案一次确认（未指定颜色则附两套候选色板）→动手改→视口截图验收（无截图能力时降级静态自检）。交互语言跟随用户。暗色面板 fill alpha .12–.35（顶栏可放宽至 .55），禁止实色块。
+description: >-
+  Retrofit existing frontend projects (CSS / Tailwind / Flutter) into glassmorphism (frosted/liquid glass). 将已有前端项目改造为玻璃拟态/毛玻璃风格。Triggers: glassify, glassmorphism, frosted glass, liquid glass, glass UI, 玻璃化, 玻璃拟态, 上玻璃, 毛玻璃, 磨砂. Only for retrofitting existing projects, not greenfield scaffolding.
 ---
 
 # 玻璃化改造 — glassify
 
-将现有前端项目中的主容器（卡片、面板、导航栏、弹窗等）改造为玻璃质感（glassmorphism）风格。每次调用时直接出方案（未指定颜色则附两套候选色板），一次确认后动手，改完截图验证。
+将已有前端项目改造为高完成度玻璃拟态（glassmorphism）风格。核心工作方式：**技术栈与不透明外壳审计 → 出方案一次确认 → Token 化按栈改造 → 机器 DOM 审计 + 多态视口截图验收 → 清单级可控回滚**。交互语言跟随用户。
 
 ## 触发
 
@@ -13,369 +14,124 @@ description: Glassify existing frontend projects (vanilla CSS / Tailwind / Flutt
 /glassify <项目路径> [颜色说明]
 ```
 
-- 项目路径：必填，绝对路径或当前工作目录下的相对路径
-- 颜色说明：可选，直接指定色板描述（如"深邃蓝紫风"、"暖陶土色"）；未指定时方案会附两套候选色板，无需单独提问
+- **项目路径**：必填，绝对路径或当前工作目录下的相对路径
+- **颜色说明**：可选（如「深邃蓝紫风」「暖陶土色」）；未指定时方案附 4 套颜色选择，一次确认即可开工
+- **边界**：只改造已有项目，不做从零新建
+
+## 核心光学与工程铁律（全栈通用）
+
+下列任一违反 = 配方失败，必须返工，不要交付：
+
+1. **三层光路必通（先剥不透明外壳，再铺光斑）**
+   - 玻璃的本质是对背景信号做低通模糊。若 `body`、`#root`、布局外壳仍保留实色背景，会直接挡死底层光斑。改造前必须审计并透明化阻挡光路的外壳容器，再补光斑层（背景已有图片/渐变/光晕则保留）。
+2. **暗色高透 + OKLCH 色度控制**
+   - L1 主面板 fill alpha 严格落在 **`.12–.35`**（`.36` 起超标收紧，`≥ .60` 判失败重做）；L2 顶栏/侧栏可放宽至 **`.30–.55`**。
+   - Web 暗色基线：`blur ≥ 24px` + `backdrop-filter: saturate ≥ 1.6`（Tailwind 必须用 `backdrop-saturate-*`，严禁误用 `saturate-*`）；亮色基线：`blur ≥ 16px` + `saturate ≥ 1.5`。
+   - **高色度、控明度**：暗色光斑要肉眼艳丽，同时满足 WCAG AA（最差对比度 ≥ 4.5:1），须选用**低明度高色度**色相（OKLCH 建议 $L \le 0.50$、高 $C$，如深电紫/深青碧/深靛蓝），避免高明度浅青/浅白冲垮白字对比度；大屏补中区微光避免屏幕中央发空。
+   - **光泽折进 `background`**，禁止用 `::before` 叠在文字上洗对比度。
+   - **蚀刻边缘三件套**（内嵌高光 + 内嵌暗边 + 双层外投影）必齐；Flutter 侧以 `BlurStyle.outer` 双层外投影 + 顶部高光渐变近似。
+3. **禁止破坏存量布局的副作用属性**
+   - 玻璃容器**禁止加 `overflow: hidden`**（会截断存量卡片里的下拉菜单、Popover、Tooltip 与键盘 focus ring；光泽已折进 `background`，无需裁剪）。
+   - 玻璃容器**禁止加 `transform: translateZ(0)`**（会覆盖原有 `translate(-50%, -50%)` 弹窗居中与动效，并徒增移动端合成层显存占用）。
+   - **层叠上下文提示**：`backdrop-filter` 会强制创建独立 Stacking Context；若玻璃卡片内有非 Portal 渲染的下拉菜单/Popover，展开时须提升所在卡片的 `z-index`（低于顶栏、高于兄弟卡片），或将浮层挂至 Portal，否则越界部分会被后续同级玻璃卡片遮挡。
+4. **4 级 Z 轴材质阶梯（严禁玻璃套玻璃）**
+   - CSS `backdrop-filter` 会创建 **Backdrop Root**，父子同套会导致子级无法采样父级背后的光斑并翻倍 GPU 开销。按层级区分材质：
+
+| Z 轴层级 | 适用元素 | 材质策略 |
+|---------|---------|---------|
+| **L0 玻璃内嵌子块** | 卡片内分组槽、统计小格、嵌套面板 | **禁 `backdrop-filter`**；用低透明槽位 + 细边框 |
+| **L1 主容器** | 主卡片、核心面板 | 高透玻璃（暗色 alpha `.12–.35`） |
+| **L2 滚动悬浮栏** | 顶栏、底栏、侧边栏 | 中透玻璃（暗色 alpha `.30–.55`），兼顾透光与滚字可读 |
+| **L3 悬浮弹窗层** | Modal、Drawer、Dialog、Toast | 必须配套 **Scrim 暗化遮罩** 压低底层噪声，本体保持高透 |
+| **实色交互元素** | 按钮、输入框、搜索框、标签/Badge、表格/列表行 | **保持实色**，可读性与可点击辨识度优先 |
+
+5. **性能预算与无障碍兜底**
+   - **Web 与 Flutter 均禁止给长列表 / Feed 流 / 密集网格的每一项套 `backdrop-filter`**；Web 同视口活跃大面积模糊层尽量控制在 ≤ 8–10 个。
+   - Web 配方必须同时包含 `-webkit-backdrop-filter`（兼容旧版 Safari / iOS WebView）、`@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))` 以及 `@media (prefers-reduced-transparency: reduce)` 实色可读兜底。
 
 ## 流程
 
-### 阶段 1：技术栈探测
+### 阶段 1：技术栈与结构审计
 
-自动识别项目前端技术栈：
+先识别技术栈并路由到对应配方文档（**只读取命中的栈文档，不要全量加载无关栈**）：
 
-| 探测依据 | 判定为 |
-|---------|-------|
-| 存在 `src/` + `.css` 文件且无 `tailwind` 依赖 | **手写 CSS** |
-| `tailwind.config` 或 `@tailwind` 或 `@import "tailwindcss"` | **Tailwind** |
-| 存在 `pubspec.yaml` + `lib/` + `.dart` 文件 | **Flutter** |
-| 同时匹配多个 | 取最外层/最活跃的栈 |
+| 探测依据 | 判定与配方 |
+|---------|-----------|
+| `tailwind.config.*` / `@tailwind` / `@import "tailwindcss"` / `tailwindcss` 依赖 | **Tailwind（标注 v3 / v4，含 shadcn/ui 检查）** → 读 [references/tailwind.md](./references/tailwind.md) |
+| `pubspec.yaml` + `lib/*.dart` | **Flutter（标注版本是否 ≥ 3.27）** → 读 [references/flutter.md](./references/flutter.md) |
+| `.css` / `.scss` / HTML 内联 `<style>` / Vue·Svelte·Astro SFC / CSS Modules / AntD·MUI·Element Plus | **CSS / Token 覆写** → 读 [references/css.md](./references/css.md) |
+| 同时匹配多个 | 取最外层/实际承载 UI 的栈；存疑则列出猜测请用户确认 |
 
-如探测失败或存疑，输出猜测结果让用户确认。
+同时完成 3 项结构审计（写入阶段 2 方案卡）：
+1. **主题模式**：单亮 / 单暗 / **明暗双主题**（双主题项目必须用 Token 同时支持明暗两套，禁止覆盖破坏另一套主题）。
+2. **不透明外壳清单**：定位 `body`、`#root`、Layout Wrapper 或 `Scaffold` 上会遮挡底层光斑的不透明背景。
+3. **范围与分层**：盘点 L0 / L1 / L2 / L3 与实色元素；中大型仓库先沉淀共享 Token/语义类，再聚焦核心布局外壳与关键页面，避免失控扩散。
 
 ### 阶段 2：产出方案，一次确认
 
-`git status` 先行：检查项目工作区是否干净，结果写进方案卡片的「工作区检测」行。
+先查工作区状态（写入方案卡的「工作区检测」行）：
+- **Git 仓库**：跑 `git status`，区分「干净」与「已有未提交改动（改用清单级逐文件回滚）」。
+- **非 Git 目录**：明确提示无版本控制，询问用户是否先为待改文件留 `.bak` 备份或直接确认改造。
 
-**用户在触发词中给了颜色说明** → 直接按该色板出方案。
+颜色方案处理：
+- **触发时已给颜色说明** → 直接按该色板出方案。
+- **未给颜色** → 不要单独发问，在方案卡中附以下 4 个选项让用户一次回复确认：
+  1. **暖纸 Warm Paper** — 暖白底 + 黄蓝红光斑，亮色白玻璃
+  2. **暗夜霓虹 Dark Neon** — 深夜底 + 低明高色紫青靛光晕，暗色高透玻璃
+  3. **跟随项目现有主色（推荐双主题项目）** — 提取项目主/辅色衍生光斑，保留原有明暗主题架构
+  4. **自定义** — 描述想要的色板与明暗（如「薄荷绿+深海蓝，冷调暗色」）
 
-**未给颜色** → 不要单独发问，出方案时附上候选色板，让用户一次回复「1 / 2 / 自定义色板描述」：
-
-> 选一个颜色方案即可开工：
-> 1. **暖纸 Warm Paper** — 暖白底+黄蓝红彩色光斑，亮色调玻璃
-> 2. **暗夜霓虹 Dark Neon** — 深夜蓝底+紫青霓虹光晕，暗色调玻璃
-> 3. **跟随目标项目现有主色** — 提取项目样式中的主色和辅色，衍生光斑
-> 4. **自定义** — 描述你想要的色板（如"薄荷绿+天蓝，清新冷调"）
-
-选定色板后，确定：
-- 玻璃面底色明暗（亮色/暗色）
-- 光斑颜色（1~4 个径向渐变）
-- 文字色（浅色背景用深色、深色背景用浅色）
-
-向用户展示（以下输出均以用户当前语言）：
+按用户当前语言展示方案卡：
 
 ```
 📋 玻璃化方案
 ──────────────
-技术栈：手写 CSS
-底色：亮色暖白
-光斑：黄(#ffe81a) + 蓝(#0758f7) + 红(#ff3044)
-要动：
-  1. src/components.css → .chart-result, .domain-console 等 → 加玻璃配方
-  2. src/styles.css → .birth-form, .site-header → 加玻璃配方
-  3. src/styles.css → 背景补光斑（当前为纯色平底）
-维持实色：按钮、输入框、标签
-⚠️ 工作区检测：2 个未提交文件——请先提交/stash，或确认改用逐文件回滚
-────────────────
-回复 y 开始改造（未选色板时附「1 / 2 / 自定义色板」一并回复）
+技术栈：Tailwind v4（shadcn/ui）· 明暗双主题
+色板：跟随项目主色衍生光斑（或待选 1 / 2 / 3 / 自定义）
+Token 层：src/styles/glass.css（新增共享 Token 与 .glass-* 语义类）
+外壳剥离：body / #root / MainLayout 移除实色背景，底层挂 .app-backdrop
+分层改造：
+  - L1 主卡片：DashboardCard, MetricPanel → .glass-card（移除旧 bg-*）
+  - L2 悬浮栏：TopNav, Sidebar → .glass-bar
+  - L3 弹窗层：ConfirmDialog → .glass-scrim + .glass-overlay
+  - L0 内嵌槽：StatSubTile → .glass-slot（无 backdrop-filter）
+维持实色：按钮、输入框、标签、表格行
+工作区检测：干净（或：N 个未提交文件，改用清单级回滚 / 非 Git 目录）
+──────────────
+回复 y 开始改造（未选色板时附「1 / 2 / 3 / 自定义色板」一并回复）
 ```
 
 **用户确认前，不写任何文件。**
 
-### 阶段 3：执行改造
+### 阶段 3：按栈执行改造
 
-**动手前硬闸口：工作区干净。** `git status` 已在阶段 2 出方案时检查并写入方案卡片，动手前复核一次仍然干净。若有未提交改动且用户未处理，本次改造的回滚会连带吞掉无关改动——只允许逐文件回滚模式。闸口未过，不写任何文件。
+动手前复核工作区闸口（Git 仓确认状态未变；未确认前零写入）。读取阶段 1 命中的 `references/<stack>.md`，严格遵守：
+1. **Token 先行**：优先沉淀 1 份 `--glass-*` 变量 + L0/L1/L2/L3 语义类（或 Flutter `GlassSurface` 封装），禁止把几百字符的内联任意值类散弹式复制到几十个组件。
+2. **光路剥离 + 清旧底色**：先透明化不透明外壳并挂载光斑层；给存量元素挂玻璃类时，**必须移除或覆盖原有不透明 `bg-*` / `background-color`**（避免 `background-color` 垫在渐变下方捂死玻璃）。
+3. **记录变更清单**：维护本次**修改文件列表**与**新建文件列表**，供阶段 5 精准回滚。
 
-按技术栈执行对应配方。
+### 阶段 4：机器审计 + 多态视口截图验收
 
-#### 暗色配方铁律（每次必检）
+读取 [references/verify.md](./references/verify.md) 执行验证：
+- **Web 项目**：使用任意可用浏览器工具（Playwright / Chrome DevTools MCP / 内置浏览器）访问本地服务（静态页先启 `python3 -m http.server`，勿用 `file://`）：
+  1. 执行 `references/verify.md` 中的 **DOM 确定性审计脚本**，机器校验 `backdrop-filter` 生效、无不透明外壳遮挡、无玻璃嵌套、无实色交互元素误伤、暗色 alpha 未超标、无 `overflow: hidden` 误加、抽样文字对比度达标；
+  2. 拍摄**三态视口截图**（**严禁 `fullPage: true`**，避免 `backdrop-filter` 拼接钉死第一屏造成截断伪影）：① 默认首屏（双主题则明暗各一）；② 滚动后视口（验顶栏虚化正文）；③ 打开下拉框/弹窗（验无裁剪且 Scrim 下文字清晰）。
+- **Flutter 项目**：执行 `flutter analyze` 检查编译与静态问题，有设备/模拟器时跑 `flutter run` 截图验收。
+- **降级路径**（无浏览器或无 Flutter 设备）：按 `references/verify.md` 执行代码级静态自检，将视觉项整理为自查清单交用户，交付消息必须显式标注「未经视口验证」或「未做截图验收」。
 
-暗色玻璃最容易做成「糊一层深色块」。下列任一违反 = 配方失败，重做，不要交付：
+### 阶段 5：可控回滚（如有需要）
 
-- **fill alpha `.12–.35`**；`.36` 起即超标需收紧，`≥ .60` 是实色块直接判失败
-- **blur ≥ 24px + saturate ≥ 1.6**
-- **蚀刻边缘必齐**：内嵌高光 + 内嵌暗边 + 双层外投影。缺一项就没有厚度
-- **光泽折进 `background`**，禁止 `::before` 叠在文字上（会洗对比度）
-- **背景光斑必须又大又亮**，玻璃后面没东西可虚化 = 看起来只是半透明色块
-- 顶栏可比面板略实（alpha `.30–.55`），面板保持高透
+基于阶段 3 记录的**修改文件列表**与**新建文件列表**执行精准恢复：
+- **Git 仓库（无论原先干净与否）**：
+  - 恢复修改文件：`git checkout -- <本次修改的文件列表>`
+  - 清理新建文件：`rm <本次新建的文件列表>`（注意：单独 `git checkout -- .` 删不掉新建的 untracked 文件！）
+- **非 Git 目录**：用 `.bak` 备份恢复，或按变更清单逐项撤销。
 
-颜色跟项目走；以上是结构，不是色值。
-
-亮色配方基线同检：blur ≥ 16px + saturate ≥ 1.5 + 蚀刻三件套（见上方 `.glass-card` 样例），缺一项同样重做。
-
-#### 三套共用配方核心
-
-```css
-/* 玻璃卡核心配方（亮色底）——光泽已折进 background，无 ::before */
-.glass-card {
-  position: relative;
-  border: 1px solid rgba(255,255,255,.75);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.50), transparent 52%),
-    linear-gradient(165deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.34) 100%);
-  backdrop-filter: blur(16px) saturate(1.5);
-  -webkit-backdrop-filter: blur(16px) saturate(1.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.95),
-    inset 0 0 0 1px rgba(255,255,255,.28),
-    inset 0 -1px 0 rgba(17,17,17,.05),
-    0 2px 5px rgba(17,17,17,.07),
-    0 20px 44px -14px rgba(17,17,17,.28);
-  overflow: hidden;
-  transform: translateZ(0);
-}
-```
-
-```css
-/* 玻璃卡核心配方（暗色底）——高透 + 蚀刻，alpha 峰值 .32 */
-.glass-card-dark {
-  position: relative;
-  border: 1px solid rgba(255,255,255,.16);
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 52%, transparent),
-    linear-gradient(160deg, rgba(255,255,255,.14), rgba(20,20,28,.20) 46%, rgba(12,12,18,.32));
-  backdrop-filter: blur(24px) saturate(1.8);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.30),
-    inset 0 -1px 0 rgba(0,0,0,.30),
-    inset 0 0 0 1px rgba(255,255,255,.04),
-    inset 0 -24px 44px -26px rgba(0,0,0,.55),
-    0 10px 26px rgba(0,0,0,.45),
-    0 30px 64px -24px rgba(0,0,0,.60);
-  overflow: hidden;
-  transform: translateZ(0);
-}
-
-/* 顶栏可比面板略实，仍必须能透光斑 */
-.glass-bar-dark {
-  backdrop-filter: blur(24px) saturate(1.7);
-  -webkit-backdrop-filter: blur(24px) saturate(1.7);
-  background: linear-gradient(160deg, rgba(40,40,52,.55), rgba(16,16,22,.30));
-  border-bottom: 1px solid rgba(255,255,255,.12);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.16),
-    0 6px 22px rgba(0,0,0,.40);
-}
-```
-
-渐变里的中性暗色可换成项目主色（如深咖/深夜蓝），**只换色相，不把 alpha 加回去**。
-
-**Safari 前缀**：手写 CSS 必须同时带 `backdrop-filter` 和 `-webkit-backdrop-filter`（Safari 至今要求前缀，缺一个玻璃全失效）。Tailwind 的 `backdrop-blur-*` 工具类已内置双前缀，无需手补。
-
-#### 手写 CSS 项目改造
-
-1. 在全局 CSS 或组件 CSS 中插入玻璃配方
-2. 给目标元素追加 `.glass-card`/`.glass-card-dark` 类
-3. 背景补光斑：在 `body` 或 `#root` 或固定层（`position:fixed; inset:0; z-index:-1`）上加多层 `radial-gradient`
-
-```css
-/* 背景光斑模板（亮色），颜色和位置按用户色板调整 */
-.app-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(720px 480px at 10% -8%,
-      color-mix(in srgb, #ffe81a 78%, transparent), transparent 68%),
-    radial-gradient(820px 560px at 98% 14%,
-      color-mix(in srgb, #0758f7 26%, transparent), transparent 66%),
-    radial-gradient(900px 620px at 46% 112%,
-      color-mix(in srgb, #ffe81a 56%, transparent), transparent 70%),
-    radial-gradient(520px 420px at 82% 88%,
-      color-mix(in srgb, #ff3044 14%, transparent), transparent 72%),
-    var(--paper);
-}
-
-/* 背景光斑模板（暗色）——光斑必须够大够亮，否则高透玻璃后面是一片黑 */
-.app-backdrop-dark {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(840px 560px at 10% -8%,
-      color-mix(in srgb, var(--accent, #7c5cff) 60%, transparent), transparent 70%),
-    radial-gradient(940px 660px at 104% 10%,
-      color-mix(in srgb, var(--accent-2, #3de0ff) 36%, transparent), transparent 68%),
-    radial-gradient(840px 620px at 78% 104%,
-      color-mix(in srgb, var(--accent, #7c5cff) 26%, transparent), transparent 70%),
-    radial-gradient(700px 560px at 90% 68%,
-      color-mix(in srgb, var(--accent-2, #3de0ff) 16%, transparent), transparent 74%),
-    var(--paper, #12121a);
-}
-```
-
-#### Tailwind 项目改造
-
-Tailwind 的 `backdrop-blur` 只有预设档位，需要精确值时在 `tailwind.config` 或 `globals.css` 补自定义值：
-
-```css
-@theme inline {
-  --blur-glass: 16px;     /* 亮色面板 */
-  --blur-glass-lg: 24px;  /* 暗色面板 / 顶栏 */
-}
-```
-
-`@theme` 是 Tailwind v4 语法；v3 项目改在 `tailwind.config` 的 `theme.extend.backdropBlur` 里加同名档位，否则档位静默无效。同理，v3 下 `border-white/16` 须写作 `border-white/[.16]`、`saturate-180` 须写作 `saturate-[1.8]`（v3 透明度步进为 5、saturate 只有 0/50/100/150/200），否则静默无效。
-
-玻璃化时用这些工具类组合：
-
-```jsx
-// 亮色玻璃卡（光泽折进 bg，无 ::before）
-<div className="relative border border-white/75 rounded-[18px] bg-[linear-gradient(180deg,rgba(255,255,255,.50),transparent_52%),linear-gradient(165deg,rgba(255,255,255,.62),rgba(255,255,255,.34))] backdrop-blur-glass saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,.95),inset_0_0_0_1px_rgba(255,255,255,.28),inset_0_-1px_0_rgba(17,17,17,.05),0_2px_5px_rgba(17,17,17,.07),0_20px_44px_-14px_rgba(17,17,17,.28)] overflow-hidden [transform:translateZ(0)]">
-
-// 暗色玻璃卡（高透，禁止 bg-[rgba(30,30,50,.85)] 这种实色）
-<div className="relative border border-white/16 rounded-[20px] bg-[linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)_52%,transparent),linear-gradient(160deg,rgba(255,255,255,.14),rgba(20,20,28,.20)_46%,rgba(12,12,18,.32))] backdrop-blur-glass-lg saturate-180 shadow-[inset_0_1px_0_rgba(255,255,255,.30),inset_0_-1px_0_rgba(0,0,0,.30),inset_0_0_0_1px_rgba(255,255,255,.04),inset_0_-24px_44px_-26px_rgba(0,0,0,.55),0_10px_26px_rgba(0,0,0,.45),0_30px_64px_-24px_rgba(0,0,0,.60)] overflow-hidden [transform:translateZ(0)]">
-```
-
-**背景光斑**：加在布局外壳层，用 `bg-[radial-gradient(...)]`。暗色项目套用上面 `.app-backdrop-dark` 的多层径向，不要只铺纯色。
-
-```jsx
-<div className="bg-[radial-gradient(720px_480px_at_10%_-8%,color-mix(in_srgb,var(--accent,#ffe81a)_78%,transparent)_0%,transparent_68%),radial-gradient(820px_560px_at_98%_14%,color-mix(in_srgb,var(--accent)_26%,transparent)_0%,transparent_66%),var(--paper)]">
-```
-
-#### Flutter 项目改造
-
-```dart
-// 亮色玻璃卡
-Container(
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(18),
-    border: Border.all(
-      color: Colors.white.withValues(alpha: 0.75),
-    ),
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(18),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.62),
-              Colors.white.withValues(alpha: 0.34),
-            ],
-          ),
-        ),
-        // 内容
-      ),
-    ),
-  ),
-);
-
-// 暗色玻璃卡 —— surface alpha 用 0.22，禁止 0.85（实色块）
-// final cs = Theme.of(context).colorScheme;
-// 背后必须有亮光斑/图片，否则 BackdropFilter 虚化空气
-Container(
-  decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(20),
-    border: Border.all(
-      color: Colors.white.withValues(alpha: 0.16),
-    ),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.45),
-        blurRadius: 26,
-        offset: const Offset(0, 10),
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.60),
-        blurRadius: 64,
-        offset: const Offset(0, 30),
-      ),
-    ],
-  ),
-  child: ClipRRect(
-    borderRadius: BorderRadius.circular(20),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.14),
-              cs.surface.withValues(alpha: 0.22),
-            ],
-          ),
-        ),
-        // 内容
-      ),
-    ),
-  ),
-);
-```
-
-**Flutter 补充约束：**
-
-- `withValues(alpha:)` 需要 Flutter ≥ 3.27；更旧的项目改用 `withOpacity()`（已废弃但可编译），全文件保持同一套 API，不要混用
-- Flutter 无 inset 阴影：蚀刻三件套（内嵌高光/暗边/内嵌环）仅约束 Web 栈；Flutter 用双层外投影 + 顶部高光渐变近似「厚度」，即视为达标（见上方暗色示例的两枚 `BoxShadow`）
-- Web 侧 `saturate ≥ 1.6` 在 Flutter 无对应 API：可用 `ImageFilter.compose(outer: ColorFilter.matrix(饱和度矩阵), inner: ImageFilter.blur(...))` 近似，或接受 Flutter 版仅 blur 并向用户说明
-- `BackdropFilter` 底层走 saveLayer，开销大：**长列表不要给每个 item 套玻璃**（滚动掉帧），列表项用实色半透明近似，玻璃只给悬浮卡片/顶栏/弹窗
-
-### 阶段 4：验证
-
-**Web 项目**：用 Playwright 打开 `localhost` 截图。没有 dev server 的静态页面，先在项目目录起 `python -m http.server` 再访问（Playwright MCP 拒绝 `file://` 协议，直接打开会报错）。
-
-**铁律：只用视口截图，禁止 `fullPage: true`。** `backdrop-filter` 在 Playwright 拼接长图时会钉死在第一屏，看起来像「玻璃面板拦腰截断」——那是伪影，不是真实渲染。用户会按伪影误判配方失败。
-
-**Flutter 项目**：执行 `flutter analyze` 检查编译，尝试 `flutter run` 截图。
-
-**降级路径（agent 无浏览器/视口截图能力，或 Flutter 无设备/模拟器时）**：改做代码级静态自检——校验暗色面板 alpha 落在 `.12–.35`（顶栏 ≤ `.55`）、blur ≥ 24px、saturate ≥ 1.6、蚀刻三件套与双层外投影层数齐全、`-webkit-backdrop-filter` 前缀在位；渲染类检查项（光斑肉眼可见、透光正常、堆叠透光、光泽不盖文字）转成自查清单交用户，交付消息必须标注「未经视口验证」。Flutter 侧 `flutter analyze` 通过即交付，标注「未做截图验收」。
-
-检查清单：
-- 玻璃卡片背后有可模糊的内容（光斑/图片/渐变）；暗色底光斑肉眼可见，不是淡得像没加
-- 暗色面板透过玻璃能看到光斑色相；若只看到实色块 → alpha 超标，重做
-- 玻璃卡片相互堆叠时透光正常（叠加处 alpha 峰值不得 >.60 或 <.05，即不出现近纯白/近纯黑）
-- 文字对比度不因玻璃背景降低——用玻璃下方最深/最浅背景色分别计算对比度，取最差值 ≥ 4.5:1（正文）/ 3:1（大字）——光泽不得盖住文字
-- 按钮、输入框、标签没有误玻璃化
-- 44px 触摸目标未被装饰破坏
-- 兼容 `prefers-reduced-motion`（玻璃效果本身不涉及动画，不动）
-- Web 截图是视口模式，不是 fullPage
-
-### 阶段 5：回滚（如有需要）
-
-回滚只针对本次玻璃化的改动，前提是动手前硬闸口已确认工作区干净：
-
-- 工作区当时干净 → 可整体恢复：`git checkout -- .`
-- 当时留有无关未提交改动 → 只能逐文件恢复：`git checkout -- <本次改动的文件列表>`
-
-禁止在对工作区状态不明时执行无差别整体回滚。
-
-## 内置判定表
-
-### 哪些元素应该玻璃化
-
-| 元素类型 | 是否玻璃化 | 理由 |
-|---------|-----------|------|
-| 主卡片/面板 | ✅ | 玻璃感最集中体现 |
-| 侧边栏/抽屉 | ✅ | 悬浮在背景上，透光效果佳 |
-| 导航栏/底部栏 | ✅ | 半透明悬浮，视觉层次清晰 |
-| 弹窗/Modal | ✅ | 浮层效果与玻璃质感天然契合 |
-| Toast/通知条 | ✅ | 轻微半透明，不干扰正文 |
-| 搜索框/输入框 | ❌ 保持实色 | 内容可读性优先 |
-| 按钮 | ❌ 保持实色 | 可点击辨识度 |
-| 标签/badge | ❌ 保持实色 | 小元素不需透光 |
-| 表格/列表行 | ❌ 保持实色 | 大量文字需要清晰对比度 |
-
-### 背景处理规则
-
-| 现有背景 | 处理方式 |
-|---------|---------|
-| 已有渐变/图片/纹理 | 保留不动，直接上玻璃 |
-| 纯色平底 | 补光斑层（2~4 个径向渐变，用用户色板） |
-| 深色纯色 | 补霓虹光晕（暗色底配方，光斑够大够亮） |
-| 已有光斑/光晕 | 保留，玻璃卡自然透出 |
-
-### 暗色/亮色选择规则
-
-| 用户选色 | 明暗流派 |
-|---------|---------|
-| 暖纸 Warm Paper | 亮色白玻璃 |
-| 自定义浅色系 | 亮色白玻璃 |
-| 暗夜霓虹 Dark Neon | 暗色烟熏玻璃 |
-| 自定义深色系 | 暗色烟熏玻璃 |
-| 跟随项目主色 | 提取页面底色明暗判断 |
+禁止在未核对工作区状态时执行无差别整体重置。
 
 ## 不支持的场景
 
-- 没有 `backdrop-filter` 支持的浏览器（IE11 等）——降级策略：卡面纯色背景，保留边框和阴影
-- 纯文本/终端项目
-- 无 CSS 的纯后端项目
-- 非 Web/Flutter 的桌面端应用（Electron 算 Web 项目）
+- 纯文本 / 终端 CLI 项目
+- 无 UI / 无样式的纯后端项目
+- 非 Web / 非 Flutter 的原生桌面应用（Electron / Tauri 算 Web 项目）
+- 不支持 `backdrop-filter` 的老旧浏览器（如 IE11）自动走 `@supports not` 实色卡片降级

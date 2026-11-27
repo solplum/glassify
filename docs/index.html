@@ -1,43 +1,125 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>glassify · 玻璃拟态配方参考</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%237c5cff'/%3E%3C/svg%3E">
-<meta name="description" content="glassify skill 配方活体参照：亮色白玻璃 / 暗色高透玻璃双主题，暗色铁律对照样例，全部内联无依赖。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%236d4aff'/%3E%3C/svg%3E">
+<meta name="description" content="glassify skill 配方活体参照：亮色白玻璃 / 暗色高透玻璃双主题，4 级 Z 轴材质阶梯（L0-L3 + Scrim），暗色铁律对照样品，全部内联零依赖。">
 <style>
   /* ============================================================
-     glassify 配方参考页 —— 本页 CSS 即 SKILL.md 配方本体
-     · 亮色：白玻璃 + 暖纸底 + 黄蓝红光斑
-     · 暗色：高透烟熏玻璃（fill alpha ≤.35）+ 深夜底 + 紫青光晕
-     暗色铁律：alpha .12–.35 / blur ≥ 24 / 蚀刻边缘三件套 / 光泽折进 background
+     glassify 配方参考页 —— 与 references/css.md 保持 1:1 一致
+     · Token 驱动：明暗双主题无缝切换，所有 var() 均带显式 fallback
+     · 光路打通：html 托底、body 透明、fixed backdrop z-index:-1
+     · 暗色铁律：alpha .12–.35 / blur ≥ 24 / saturate 1.8 / OKLCH 低明高色光斑
+     · 零破坏：无 overflow:hidden，无 transform:translateZ(0)，展开下拉自动提层
      ============================================================ */
   :root {
-    --paper-light: #faf7f0;
-    --paper-dark: #12121a;
+    --glass-paper: #faf7f0;
+    --glass-text: #1c1914;
+    --glass-text-2: rgba(28, 25, 20, .74);
+    --glass-text-3: rgba(28, 25, 20, .70);
+
     --accent-blue: #0758f7;
-    --accent-purple: #7c5cff;
-    --accent-cyan: #3de0ff;
-  }
-  body[data-theme="light"] {
-    --text: #201d17;
-    --text-2: rgba(32, 29, 23, .62);
-    --text-3: rgba(32, 29, 23, .45);
+    --accent-purple: #6d4aff;
+    --accent-cyan: #06a8d0;
+
+    --glass-blob-1: #ffe81a;
+    --glass-blob-2: #0758f7;
+    --glass-blob-3: #ff3044;
+
+    /* L1 主面板 */
+    --glass-bg:
+      linear-gradient(180deg, rgba(255, 255, 255, .50), transparent 52%),
+      linear-gradient(165deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .34) 100%);
+    --glass-border: rgba(255, 255, 255, .75);
+    --glass-radius: 18px;
+    --glass-filter: blur(16px) saturate(1.5);
+    --glass-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .95),
+      inset 0 0 0 1px rgba(255, 255, 255, .28),
+      inset 0 -1px 0 rgba(17, 17, 17, .05),
+      0 2px 5px rgba(17, 17, 17, .07),
+      0 20px 44px -14px rgba(17, 17, 17, .24);
+
+    /* L2 悬浮顶栏 */
+    --glass-bar-bg: linear-gradient(160deg, rgba(255, 255, 255, .68), rgba(255, 255, 255, .42));
+    --glass-bar-border: rgba(255, 255, 255, .75);
+    --glass-bar-filter: blur(16px) saturate(1.5);
+    --glass-bar-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .95),
+      0 6px 22px rgba(17, 17, 17, .08);
+
+    /* L0 玻璃内嵌子块（无 backdrop-filter） */
+    --glass-slot-bg: rgba(255, 255, 255, .42);
+    --glass-slot-border: rgba(28, 25, 20, .09);
+
+    /* L3 弹窗遮罩 */
+    --glass-scrim: rgba(20, 18, 14, .34);
+
+    /* 降级实色 */
+    --glass-fallback-bg: rgba(255, 255, 255, .94);
+    --glass-fallback-border: rgba(28, 25, 20, .12);
+
     color-scheme: light;
   }
-  body[data-theme="dark"] {
-    --text: rgba(255, 255, 255, .92);
-    --text-2: rgba(255, 255, 255, .60);
-    --text-3: rgba(255, 255, 255, .38);
+
+  html[data-theme="dark"] {
+    --glass-paper: #0f1018;
+    --glass-text: rgba(255, 255, 255, .94);
+    --glass-text-2: rgba(255, 255, 255, .82);
+    --glass-text-3: rgba(255, 255, 255, .68);
+
+    /* OKLCH 低明度高色度暗色光斑 */
+    --glass-blob-1: #6d4aff;
+    --glass-blob-2: #06a8d0;
+    --glass-blob-3: #4338ca;
+
+    /* L1 暗色高透面板：fill alpha 峰值 .32 */
+    --glass-bg:
+      linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .03) 52%, transparent),
+      linear-gradient(160deg, rgba(255, 255, 255, .14), rgba(20, 20, 28, .20) 46%, rgba(12, 12, 18, .32));
+    --glass-border: rgba(255, 255, 255, .16);
+    --glass-radius: 20px;
+    --glass-filter: blur(24px) saturate(1.8);
+    --glass-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .30),
+      inset 0 -1px 0 rgba(0, 0, 0, .30),
+      inset 0 0 0 1px rgba(255, 255, 255, .04),
+      inset 0 -24px 44px -26px rgba(0, 0, 0, .55),
+      0 10px 26px rgba(0, 0, 0, .45),
+      0 30px 64px -24px rgba(0, 0, 0, .60);
+
+    /* L2 暗色悬浮顶栏：alpha .30–.52 */
+    --glass-bar-bg: linear-gradient(160deg, rgba(40, 40, 52, .52), rgba(16, 16, 22, .30));
+    --glass-bar-border: rgba(255, 255, 255, .12);
+    --glass-bar-filter: blur(24px) saturate(1.7);
+    --glass-bar-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .16),
+      0 6px 22px rgba(0, 0, 0, .40);
+
+    /* L0 暗色内嵌子块（无 backdrop-filter） */
+    --glass-slot-bg: rgba(255, 255, 255, .06);
+    --glass-slot-border: rgba(255, 255, 255, .11);
+
+    /* L3 暗色弹窗遮罩 */
+    --glass-scrim: rgba(6, 7, 12, .58);
+
+    --glass-fallback-bg: rgba(20, 21, 30, .94);
+    --glass-fallback-border: rgba(255, 255, 255, .14);
+
     color-scheme: dark;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--glass-paper, #faf7f0);
+  }
   body {
     font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: var(--text);
+    color: var(--glass-text, #1c1914);
+    background: transparent;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
@@ -45,77 +127,144 @@
     * { transition: none !important; animation: none !important; }
   }
 
-  /* ---------- 背景光斑层（玻璃后面必须有东西可虚化） ---------- */
-  .backdrop {
+  /* ---------- 背景光斑层（直接消费 --glass-blob-*，与 references/css.md 1:1 一致） ---------- */
+  .app-backdrop {
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    transition: opacity .45s ease;
-  }
-  .backdrop-light {
-    opacity: 1;
     background:
-      radial-gradient(720px 480px at 10% -8%,
-        color-mix(in srgb, #ffe81a 78%, transparent), transparent 68%),
-      radial-gradient(820px 560px at 98% 14%,
-        color-mix(in srgb, #0758f7 26%, transparent), transparent 66%),
-      radial-gradient(900px 620px at 46% 112%,
-        color-mix(in srgb, #ffe81a 56%, transparent), transparent 70%),
-      radial-gradient(520px 420px at 82% 88%,
-        color-mix(in srgb, #ff3044 14%, transparent), transparent 72%),
-      var(--paper-light);
+      radial-gradient(720px 480px at 10% -6%,
+        color-mix(in srgb, var(--glass-blob-1, #ffe81a) 78%, transparent), transparent 68%),
+      radial-gradient(820px 560px at 96% 12%,
+        color-mix(in srgb, var(--glass-blob-2, #0758f7) 28%, transparent), transparent 66%),
+      radial-gradient(860px 600px at 34% 88%,
+        color-mix(in srgb, var(--glass-blob-1, #ffe81a) 50%, transparent), transparent 70%),
+      radial-gradient(720px 540px at 84% 84%,
+        color-mix(in srgb, var(--glass-blob-3, #ff3044) 28%, transparent), transparent 70%),
+      var(--glass-paper, #faf7f0);
   }
-  /* 暗色光斑必须又大又亮，否则高透玻璃后面是一片黑 */
-  .backdrop-dark {
-    opacity: 0;
+  html[data-theme="dark"] .app-backdrop {
     background:
-      radial-gradient(840px 560px at 10% -8%,
-        color-mix(in srgb, var(--accent-purple) 60%, transparent), transparent 70%),
-      radial-gradient(940px 660px at 104% 10%,
-        color-mix(in srgb, var(--accent-cyan) 36%, transparent), transparent 68%),
-      radial-gradient(840px 620px at 78% 104%,
-        color-mix(in srgb, var(--accent-purple) 26%, transparent), transparent 70%),
-      radial-gradient(700px 560px at 90% 68%,
-        color-mix(in srgb, var(--accent-cyan) 16%, transparent), transparent 74%),
-      var(--paper-dark);
+      radial-gradient(860px 580px at 10% -6%,
+        color-mix(in srgb, var(--glass-blob-1, #6d4aff) 54%, transparent), transparent 70%),
+      radial-gradient(920px 640px at 102% 10%,
+        color-mix(in srgb, var(--glass-blob-2, #06a8d0) 34%, transparent), transparent 68%),
+      radial-gradient(780px 540px at 50% 50%,
+        color-mix(in srgb, var(--glass-blob-3, #4338ca) 32%, transparent), transparent 72%),
+      radial-gradient(840px 600px at 80% 104%,
+        color-mix(in srgb, var(--glass-blob-1, #6d4aff) 28%, transparent), transparent 70%),
+      var(--glass-paper, #0f1018);
   }
-  body[data-theme="dark"] .backdrop-light { opacity: 0; }
-  body[data-theme="dark"] .backdrop-dark  { opacity: 1; }
+  .app-backdrop::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: .018;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
 
-  /* ---------- 玻璃顶栏 ---------- */
-  /* 亮色顶栏（白玻璃） */
+  /* ---------- 4 级 Z 轴语义玻璃类 ---------- */
+  /* L2 悬浮顶栏 */
   .glass-bar {
-    backdrop-filter: blur(16px) saturate(1.5);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
-    background: linear-gradient(160deg, rgba(255,255,255,.66), rgba(255,255,255,.38));
-    border: 1px solid rgba(255,255,255,.75);
-    border-bottom-color: rgba(17,17,17,.06);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.95),
-      0 6px 22px rgba(17,17,17,.08);
+    backdrop-filter: var(--glass-bar-filter, blur(16px) saturate(1.5));
+    -webkit-backdrop-filter: var(--glass-bar-filter, blur(16px) saturate(1.5));
+    background: var(--glass-bar-bg, linear-gradient(160deg, rgba(255, 255, 255, .68), rgba(255, 255, 255, .42)));
+    background-color: transparent;
+    border: 1px solid var(--glass-bar-border, rgba(255, 255, 255, .75));
+    box-shadow: var(--glass-bar-shadow, inset 0 1px 0 rgba(255, 255, 255, .95), 0 6px 22px rgba(17, 17, 17, .08));
   }
-  /* 暗色顶栏 = skill 配方 .glass-bar-dark（可比面板略实，仍必须能透光斑） */
-  body[data-theme="dark"] .glass-bar {
-    backdrop-filter: blur(24px) saturate(1.7);
-    -webkit-backdrop-filter: blur(24px) saturate(1.7);
-    background: linear-gradient(160deg, rgba(40,40,52,.55), rgba(16,16,22,.30));
-    border-color: rgba(255,255,255,.12);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.16),
-      0 6px 22px rgba(0,0,0,.40);
+  /* L1 主容器 / 卡片（无 overflow:hidden，无 transform:translateZ(0)） */
+  .glass-card {
+    position: relative;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, .75));
+    border-radius: var(--glass-radius, 18px);
+    background: var(--glass-bg, linear-gradient(165deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .34)));
+    background-color: transparent;
+    backdrop-filter: var(--glass-filter, blur(16px) saturate(1.5));
+    -webkit-backdrop-filter: var(--glass-filter, blur(16px) saturate(1.5));
+    box-shadow: var(--glass-shadow, inset 0 1px 0 rgba(255, 255, 255, .95), 0 20px 44px -14px rgba(17, 17, 17, .24));
+    padding: 28px;
+    transition: background .4s ease, border-color .4s ease, box-shadow .4s ease;
   }
+  /* 展开内部非 Portal 下拉时，提升当前卡片层叠上下文（低于顶栏 z-index:20，高于后续兄弟卡片） */
+  .glass-card:has(details[open], [aria-expanded="true"]) {
+    z-index: 15;
+  }
+  /* L0 玻璃内嵌子块（禁 backdrop-filter，防 Backdrop Root 断链） */
+  .glass-slot {
+    border: 1px solid var(--glass-slot-border, rgba(28, 25, 20, .09));
+    border-radius: 12px;
+    background: var(--glass-slot-bg, rgba(255, 255, 255, .42));
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--glass-text-2, rgba(28, 25, 20, .74));
+  }
+  .glass-slot strong { color: var(--glass-text, #1c1914); }
+
+  /* L3 浮层弹窗 + Scrim（兄弟节点结构，防遮罩创建 Backdrop Root 阻断弹窗模糊） */
+  .glass-modal-root {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .glass-modal-root[hidden] { display: none; }
+  .glass-scrim {
+    position: absolute;
+    inset: 0;
+    background: var(--glass-scrim, rgba(20, 18, 14, .34));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .glass-overlay {
+    position: relative;
+    z-index: 1;
+    width: min(520px, 100%);
+    padding: 28px;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, .75));
+    border-radius: var(--glass-radius, 18px);
+    background: var(--glass-bg, linear-gradient(165deg, rgba(255, 255, 255, .62), rgba(255, 255, 255, .34)));
+    background-color: transparent;
+    backdrop-filter: var(--glass-filter, blur(16px) saturate(1.5));
+    -webkit-backdrop-filter: var(--glass-filter, blur(16px) saturate(1.5));
+    box-shadow: var(--glass-shadow, inset 0 1px 0 rgba(255, 255, 255, .95), 0 20px 44px -14px rgba(17, 17, 17, .24));
+  }
+
+  /* 兼容与无障碍兜底 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-card, .glass-bar, .glass-overlay {
+      background: var(--glass-fallback-bg, rgba(255, 255, 255, .94));
+      border-color: var(--glass-fallback-border, rgba(28, 25, 20, .12));
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-card, .glass-bar, .glass-overlay {
+      background: var(--glass-fallback-bg, rgba(255, 255, 255, .94));
+      border-color: var(--glass-fallback-border, rgba(28, 25, 20, .12));
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
+  /* ---------- 页面排版 ---------- */
   .topbar {
     position: sticky;
     top: 16px;
-    z-index: 10;
-    max-width: 1060px;
+    z-index: 20;
+    width: min(1012px, calc(100% - 48px));
     margin: 16px auto 0;
-    padding: 12px 20px;
+    padding: 10px 20px;
     border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
   }
   .brand {
     display: flex;
@@ -125,80 +274,62 @@
     font-size: 17px;
     letter-spacing: .02em;
   }
+  .brand-sub {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
+  }
   .brand-dot {
     width: 12px; height: 12px;
     border-radius: 4px;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent-purple) 55%, transparent);
+    background: linear-gradient(135deg, var(--accent-blue, #0758f7), var(--accent-purple, #6d4aff));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent-purple, #6d4aff) 55%, transparent);
+  }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
   .theme-btn {
-    border: 1px solid var(--text-3);
-    background: transparent;
-    color: var(--text);
+    min-height: 44px;
+    border: 1px solid var(--glass-slot-border, rgba(28, 25, 20, .09));
+    background: #fff;
+    color: var(--glass-text, #1c1914);
     font: inherit;
     font-size: 13px;
-    padding: 7px 14px;
+    font-weight: 600;
+    padding: 0 16px;
     border-radius: 999px;
     cursor: pointer;
   }
-
-  main { max-width: 1060px; margin: 0 auto; padding: 44px 24px 64px; }
-
-  /* ---------- 玻璃卡核心配方 ---------- */
-  /* 亮色白玻璃（光泽折进 background，无 ::before） */
-  .glass-card {
-    position: relative;
-    border: 1px solid rgba(255,255,255,.75);
-    border-radius: 18px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.50), transparent 52%),
-      linear-gradient(165deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.34) 100%);
-    backdrop-filter: blur(16px) saturate(1.5);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.95),
-      inset 0 0 0 1px rgba(255,255,255,.28),
-      inset 0 -1px 0 rgba(17,17,17,.05),
-      0 2px 5px rgba(17,17,17,.07),
-      0 20px 44px -14px rgba(17,17,17,.28);
-    overflow: hidden;
-    transform: translateZ(0);
-    padding: 28px;
-    transition: background .45s ease, border-color .45s ease, box-shadow .45s ease;
-  }
-  /* 暗色高透玻璃 = skill 配方 .glass-card-dark（alpha 峰值 .32，蚀刻边缘三件套） */
-  body[data-theme="dark"] .glass-card {
-    border: 1px solid rgba(255,255,255,.16);
-    border-radius: 20px;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 52%, transparent),
-      linear-gradient(160deg, rgba(255,255,255,.14), rgba(20,20,28,.20) 46%, rgba(12,12,18,.32));
-    backdrop-filter: blur(24px) saturate(1.8);
-    -webkit-backdrop-filter: blur(24px) saturate(1.8);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.30),
-      inset 0 -1px 0 rgba(0,0,0,.30),
-      inset 0 0 0 1px rgba(255,255,255,.04),
-      inset 0 -24px 44px -26px rgba(0,0,0,.55),
-      0 10px 26px rgba(0,0,0,.45),
-      0 30px 64px -24px rgba(0,0,0,.60);
+  html[data-theme="dark"] .theme-btn {
+    background: #1c1d2a;
+    border-color: rgba(255, 255, 255, .16);
   }
 
-  .hero { padding: 40px 36px; margin-bottom: 24px; }
+  main { max-width: 1060px; margin: 0 auto; padding: 40px 24px 64px; }
+
+  .hero { padding: 38px 36px; margin-bottom: 24px; }
   .hero h1 { font-size: 34px; line-height: 1.25; letter-spacing: .01em; }
   .hero h1 em {
     font-style: normal;
-    background: linear-gradient(120deg, var(--accent-blue), var(--accent-purple));
+    background: linear-gradient(120deg, var(--accent-blue, #0758f7), var(--accent-purple, #6d4aff));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
-  .hero p { margin-top: 14px; max-width: 620px; color: var(--text-2); line-height: 1.75; font-size: 15px; }
+  html[data-theme="dark"] .hero h1 em {
+    background: linear-gradient(120deg, #a78bfa, #38bdf8);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  code { white-space: nowrap; }
+  .hero p { margin-top: 14px; max-width: 790px; color: var(--glass-text-2, rgba(28, 25, 20, .74)); line-height: 1.75; font-size: 15px; }
   .hero .spec {
     margin-top: 18px;
     font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
     font-size: 12.5px;
-    color: var(--text-3);
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
     display: flex;
     flex-wrap: wrap;
     gap: 8px 18px;
@@ -208,30 +339,78 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
-    margin-bottom: 24px;
+    margin-bottom: 42px;
   }
   .card h2 { font-size: 17px; margin-bottom: 10px; }
-  .card p { color: var(--text-2); font-size: 14px; line-height: 1.75; }
+  .card p { color: var(--glass-text-2, rgba(28, 25, 20, .74)); font-size: 14px; line-height: 1.75; }
   .card .tag {
     display: inline-block;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .08em;
-    color: var(--text-3);
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
   }
   .mono-list {
     margin-top: 14px;
     font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
     font-size: 12px;
-    color: var(--text-3);
-    line-height: 2;
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
+    line-height: 1.9;
+  }
+
+  /* 卡片内不裁剪下拉实证（无 overflow:hidden + 展开提层防后方玻璃卡遮挡） */
+  .card-popover-wrap {
+    position: relative;
+    margin-top: 14px;
+  }
+  .card-popover-wrap details { position: relative; }
+  .card-popover-wrap summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #f1ece0;
+    color: #201d17;
+    border: 1px solid #dfd7c4;
+  }
+  html[data-theme="dark"] .card-popover-wrap summary {
+    background: #232433;
+    color: rgba(255, 255, 255, .92);
+    border-color: rgba(255, 255, 255, .14);
+  }
+  .popover-menu {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+    z-index: 30;
+    width: 240px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.65;
+    background: #fff;
+    color: #1c1914;
+    border: 1px solid #dfd7c4;
+    box-shadow: 0 14px 32px rgba(17, 17, 17, .18);
+  }
+  html[data-theme="dark"] .popover-menu {
+    background: #1b1c28;
+    color: rgba(255, 255, 255, .92);
+    border-color: rgba(255, 255, 255, .14);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .55);
   }
 
   /* ---------- 暗色铁律对照（固定暗色舞台，不随主题切换） ---------- */
   .law { margin-bottom: 24px; padding: 32px; }
   .law h2 { font-size: 20px; margin-bottom: 6px; }
-  .law > p { color: var(--text-2); font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
+  .law > p { color: var(--glass-text-2, rgba(28, 25, 20, .74)); font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
   .law-stage {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -240,49 +419,51 @@
     border-radius: 16px;
     background:
       radial-gradient(420px 300px at 18% 0%,
-        color-mix(in srgb, var(--accent-purple) 58%, transparent), transparent 70%),
+        color-mix(in srgb, var(--accent-purple, #6d4aff) 54%, transparent), transparent 70%),
       radial-gradient(460px 320px at 92% 100%,
-        color-mix(in srgb, var(--accent-cyan) 34%, transparent), transparent 68%),
-      #12121a;
+        color-mix(in srgb, var(--accent-cyan, #06a8d0) 34%, transparent), transparent 68%),
+      #0f1018;
   }
   .law-swatch {
     border-radius: 16px;
     padding: 22px;
     font-size: 13.5px;
     line-height: 1.7;
-    color: rgba(255,255,255,.92);
+    color: rgba(255, 255, 255, .92);
   }
   .law-swatch strong { display: block; margin-bottom: 8px; font-size: 14px; }
   .law-swatch .mono {
     display: block;
     margin-top: 10px;
     font-family: ui-monospace, Consolas, monospace;
-    font-size: 11.5px;
-    color: rgba(255,255,255,.45);
+    font-size: 12px;
+    color: rgba(255, 255, 255, .72);
   }
   /* ❌ 反面教材：fill alpha .85 = 实色块，光斑透不出来 */
   .law-bad {
     background: rgba(20, 20, 28, .85);
-    border: 1px solid rgba(255,255,255,.10);
+    border: 1px solid rgba(255, 255, 255, .10);
   }
-  /* ✅ 正确做法：alpha ≤.35 + blur 24 + 蚀刻边缘，光斑色相透出来 */
+  /* ✅ 正确做法：alpha ≤.35 + blur 24 + 蚀刻三件套（含双层外投影） */
   .law-good {
-    border: 1px solid rgba(255,255,255,.16);
+    border: 1px solid rgba(255, 255, 255, .16);
     background:
-      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03) 52%, transparent),
-      linear-gradient(160deg, rgba(255,255,255,.14), rgba(20,20,28,.20) 46%, rgba(12,12,18,.32));
+      linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .03) 52%, transparent),
+      linear-gradient(160deg, rgba(255, 255, 255, .14), rgba(20, 20, 28, .20) 46%, rgba(12, 12, 18, .32));
     backdrop-filter: blur(24px) saturate(1.8);
     -webkit-backdrop-filter: blur(24px) saturate(1.8);
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.30),
-      inset 0 -1px 0 rgba(0,0,0,.30),
-      0 10px 26px rgba(0,0,0,.45);
+      inset 0 1px 0 rgba(255, 255, 255, .30),
+      inset 0 -1px 0 rgba(0, 0, 0, .30),
+      inset 0 0 0 1px rgba(255, 255, 255, .04),
+      0 10px 26px rgba(0, 0, 0, .45),
+      0 30px 64px -24px rgba(0, 0, 0, .60);
   }
 
   /* ---------- 保持实色的元素（不上玻璃） ---------- */
   .solids { margin-bottom: 24px; padding: 32px; }
   .solids h2 { font-size: 20px; margin-bottom: 6px; }
-  .solids > p { color: var(--text-2); font-size: 14px; margin-bottom: 22px; line-height: 1.7; }
+  .solids > p { color: var(--glass-text-2, rgba(28, 25, 20, .74)); font-size: 14px; margin-bottom: 22px; line-height: 1.7; }
   .solid-row {
     display: flex;
     flex-wrap: wrap;
@@ -290,54 +471,56 @@
     gap: 16px;
   }
   .btn-solid {
+    min-height: 44px;
     border: none;
     border-radius: 12px;
-    padding: 12px 26px;
+    padding: 0 24px;
     font: inherit;
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
     color: #fff;
-    background: var(--accent-blue);
+    background: var(--accent-blue, #0758f7);
     box-shadow: 0 6px 16px -6px rgba(7, 88, 247, .5);
   }
-  body[data-theme="dark"] .btn-solid {
-    background: var(--accent-purple);
-    box-shadow: 0 6px 16px -6px rgba(124, 92, 255, .55);
+  html[data-theme="dark"] .btn-solid {
+    background: var(--accent-purple, #6d4aff);
+    box-shadow: 0 6px 16px -6px rgba(109, 74, 255, .55);
   }
   .input-solid {
+    min-height: 44px;
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 0 16px;
     font: inherit;
     font-size: 14px;
     width: 240px;
-    color: var(--text);
+    color: var(--glass-text, #1c1914);
     background: #fff;
     border: 1px solid #d8d2c6;
   }
-  body[data-theme="dark"] .input-solid {
-    background: #1c1c26;
-    border-color: rgba(255,255,255,.14);
+  html[data-theme="dark"] .input-solid {
+    background: #1c1d2a;
+    border-color: rgba(255, 255, 255, .16);
   }
-  .input-solid::placeholder { color: var(--text-3); }
+  .input-solid::placeholder { color: var(--glass-text-3, rgba(28, 25, 20, .70)); }
   .badge-solid {
     border-radius: 999px;
-    padding: 6px 14px;
+    padding: 7px 14px;
     font-size: 12.5px;
     font-weight: 600;
     background: #f1ece0;
-    color: #57503f;
+    color: #463f30;
     border: 1px solid #e2dbc9;
   }
-  body[data-theme="dark"] .badge-solid {
-    background: #262633;
-    color: rgba(255,255,255,.75);
-    border-color: rgba(255,255,255,.12);
+  html[data-theme="dark"] .badge-solid {
+    background: #252635;
+    color: rgba(255, 255, 255, .86);
+    border-color: rgba(255, 255, 255, .14);
   }
 
-  /* ---------- 判定表（玻璃卡承载，表体保持实色） ---------- */
+  /* ---------- 4 级 Z 轴判定表（玻璃卡承载，表体保持实色） ---------- */
   .table-card h2 { font-size: 20px; margin-bottom: 6px; }
-  .table-card > p { color: var(--text-2); font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
+  .table-card > p { color: var(--glass-text-2, rgba(28, 25, 20, .74)); font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
   .verdict { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
   .verdict th, .verdict td {
     text-align: left;
@@ -347,119 +530,156 @@
   .verdict th {
     font-size: 12.5px;
     letter-spacing: .06em;
-    color: var(--text-3);
-    border-bottom: 1px solid var(--text-3);
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
+    border-bottom: 1px solid var(--glass-slot-border, rgba(28, 25, 20, .09));
   }
-  .verdict tr td { background: #fff; border-bottom: 1px solid #eee8da; color: var(--text); }
-  body[data-theme="dark"] .verdict tr td {
-    background: #1a1a24;
-    border-bottom: 1px solid rgba(255,255,255,.07);
+  .verdict tr td { background: #fff; border-bottom: 1px solid #eee8da; color: var(--glass-text, #1c1914); }
+  html[data-theme="dark"] .verdict tr td {
+    background: #181924;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
   }
   .verdict tr:last-child td { border-bottom: none; }
   .verdict td:first-child { border-radius: 10px 0 0 10px; }
   .verdict td:last-child { border-radius: 0 10px 10px 0; }
-  .yes { color: #0a8f4c; font-weight: 700; }
-  body[data-theme="dark"] .yes { color: #3ddc97; }
-  .no { color: #c23a2b; font-weight: 700; }
-  body[data-theme="dark"] .no { color: #ff8a7a; }
-  .verdict td small { color: var(--text-3); }
+  .yes { color: #0a7a40; font-weight: 700; }
+  html[data-theme="dark"] .yes { color: #3ddc97; }
+  .slot-lbl { color: #1d4ed8; font-weight: 700; }
+  html[data-theme="dark"] .slot-lbl { color: #7dd3fc; }
+  .no { color: #b92d20; font-weight: 700; }
+  html[data-theme="dark"] .no { color: #ff8a7a; }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .modal-body p {
+    color: var(--glass-text-2, rgba(28, 25, 20, .74));
+    font-size: 14px;
+    line-height: 1.75;
+    margin-bottom: 16px;
+  }
 
   footer {
     margin-top: 36px;
     text-align: center;
     font-size: 13px;
-    color: var(--text-3);
+    color: var(--glass-text-3, rgba(28, 25, 20, .70));
     line-height: 2;
   }
-  footer a { color: var(--text-2); }
+  footer a { color: var(--glass-text-2, rgba(28, 25, 20, .74)); }
 </style>
 </head>
 <body data-theme="light">
 
-  <div class="backdrop backdrop-light"></div>
-  <div class="backdrop backdrop-dark"></div>
+  <div class="app-backdrop" aria-hidden="true"></div>
 
   <header class="glass-bar topbar">
-    <div class="brand"><span class="brand-dot"></span>glassify<span style="font-weight:400;font-size:13px;color:var(--text-3)">配方参考</span></div>
-    <button class="theme-btn" id="themeBtn" type="button">🌙 暗色</button>
+    <div class="brand"><span class="brand-dot"></span>glassify<span class="brand-sub">配方参考</span></div>
+    <div class="topbar-actions">
+      <button class="theme-btn" id="modalBtn" type="button">预览 L3 弹窗</button>
+      <button class="theme-btn" id="themeBtn" type="button">☾ 暗色</button>
+    </div>
   </header>
 
   <main>
     <section class="glass-card hero">
       <h1>玻璃拟态<em>配方</em>参考页</h1>
-      <p>本页即 glassify SKILL.md 配方的活体参照：右上角切换<strong>亮色白玻璃</strong>与<strong>暗色高透玻璃</strong>两套主题，全部样式内联、零依赖，源码可直接抄走。暗色配方遵守铁律——fill alpha <code>.12–.35</code>、blur ≥ 24px、蚀刻边缘三件套、光泽折进 background。</p>
+      <p>本页与 glassify 的 <code>references/css.md</code> 保持 1:1 一致：右上角切换<strong>亮色白玻璃</strong>与<strong>暗色高透玻璃</strong>，全部由 <code>--glass-*</code> Token 驱动、零依赖。暗色光斑遵守 OKLCH 低明度高色度原则，兼顾透光色相与 WCAG AA 对比度。</p>
       <div class="spec">
-        <span>亮色卡 blur(16px) saturate(1.5)</span>
-        <span>暗色卡 blur(24px) saturate(1.8)</span>
-        <span>暗色 fill 峰值 alpha .32</span>
-        <span>−webkit-backdrop-filter 必带</span>
+        <span>亮色 blur(16px) saturate(1.5)</span>
+        <span>暗色 blur(24px) saturate(1.8)</span>
+        <span>暗色 alpha ≤ .35</span>
+        <span>4 级 Z 轴材质（L0–L3 + Scrim）</span>
+        <span>无 overflow:hidden / translateZ(0)</span>
       </div>
     </section>
 
     <section class="grid">
       <article class="glass-card card">
-        <span class="tag">主卡片 / 面板 ✅</span>
-        <h2>玻璃感最集中的载体</h2>
-        <p>大容器上玻璃，透出背景光斑的色相与流动。注意本页背景：亮色黄蓝红光斑、暗色紫青光晕——玻璃后面必须有东西可虚化，否则看起来只是半透明色块。</p>
-        <div class="mono-list">border white .75 → .16<br>inset 高光 + 暗边 + 双层外投影</div>
+        <span class="tag">L1 主面板 + L0 内嵌槽</span>
+        <h2>主容器上玻璃，子块不嵌套</h2>
+        <p>父级一旦启用 <code>backdrop-filter</code> 即建立 Backdrop Root，子块若再套模糊会采样断链并倍增 GPU 开销。内部子块统一降级为 L0 轻半透明槽位：</p>
+        <div class="glass-slot">
+          <strong>L0 内嵌槽（.glass-slot）</strong><br>
+          无 <code>backdrop-filter</code>，靠低透明槽位 + 细边框区分层次，清爽省 GPU。
+        </div>
       </article>
 
       <article class="glass-card card">
-        <span class="tag">弹窗 / 顶栏 / 抽屉 ✅</span>
-        <h2>悬浮层天然契合玻璃</h2>
-        <p>顶部导航即本页顶栏配方：暗色下可比面板略实（alpha .30–.55），但必须仍能透光斑。弹窗、侧边栏、Toast 同理，浮层 + 透光 = 层次清晰。</p>
-        <div class="mono-list">顶栏 blur(24px) saturate(1.7)<br>border-bottom white .12</div>
+        <span class="tag">L2 悬浮栏 + 零裁剪实证</span>
+        <h2>不加 overflow:hidden 且展开提层</h2>
+        <p>光泽已折进 <code>background</code>，无需 <code>overflow:hidden</code> 裁剪；同时在下拉展开时自动提升所在卡片 <code>z-index</code>，避免被后方同级玻璃卡的层叠上下文压底：</p>
+        <div class="card-popover-wrap">
+          <details>
+            <summary>展开卡片内下拉菜单<span aria-hidden="true">▾</span></summary>
+            <div class="popover-menu">
+              <strong>下拉浮层完整越界可见</strong><br>
+              存量项目里的 Select / Popover / Tooltip 与焦点框均不会被玻璃配方误裁或压底。
+            </div>
+          </details>
+        </div>
+        <div class="mono-list">
+          overflow: visible<br>
+          :has(details[open]) 自动提层<br>
+          越界浮层零裁剪零压底
+        </div>
       </article>
 
       <article class="glass-card card">
-        <span class="tag">可读性红线 ⚠️</span>
-        <h2>玻璃不得吃掉对比度</h2>
-        <p>光泽已折进 background，不用 ::before 叠在文字上。正文对比度保持 WCAG AA；玻璃卡堆叠时透光正常，不出现全白全黑。按钮、输入框、标签、表格行一律保持实色，见下方样例。</p>
-        <div class="mono-list">文字色随明暗流派切换<br>44px 触摸目标不被装饰破坏</div>
+        <span class="tag">L3 弹窗 Scrim + 可读性红线</span>
+        <h2>高透与 WCAG AA 共存</h2>
+        <p>暗色光斑控明度拉色度（深紫/深青碧/深靛），避免高亮浅色击穿白字对比度；浮于密集正文上的弹窗则依赖 Scrim 遮罩压低底层噪声。</p>
+        <div class="mono-list">
+          -webkit-backdrop-filter 必带<br>
+          prefers-reduced-transparency 兜底<br>
+          @supports not 实色可读降级
+        </div>
       </article>
     </section>
 
     <section class="glass-card law">
       <h2>暗色铁律：高透 ✅ vs 实色块 ❌</h2>
-      <p>暗色玻璃最容易做成「糊一层深色块」。下面两块样品底下是同样的紫青光斑——左边 alpha .85 直接把光斑捂死，右边 alpha ≤.35 + blur 24 让色相透出来。配方失败 = 重做，不要交付。</p>
+      <p>暗色玻璃最容易做成「糊一层深色块」。下面两块样品底下是同一组低明高色紫青光斑——左边 alpha .85 把光斑捂死，右边 alpha ≤.35 + blur 24 + 完整双层外投影让色相自然透出。</p>
       <div class="law-stage">
         <div class="law-swatch law-bad">
           <strong>❌ fill alpha .85 —— 实色块</strong>
-          光斑完全透不出来，玻璃等于一层深灰油漆。这是最常见的翻车形态：面板永远不许 ≥ .60。
+          光斑完全透不出来，玻璃退化成一层深灰油漆。L1 面板永远不许 ≥ .60。
           <span class="mono">background: rgba(20,20,28,.85) — 禁止</span>
         </div>
         <div class="law-swatch law-good">
           <strong>✅ fill alpha ≤.35 + blur 24 —— 高透玻璃</strong>
-          紫青光斑的色相透过玻璃可见，蚀刻边缘提供厚度感。渐变里的中性暗色可换项目主色，只换色相，不把 alpha 加回去。
+          紫青光斑色相透过玻璃清晰可见，蚀刻边缘与双层外投影提供真实厚度感。
           <span class="mono">blur(24px) saturate(1.8) · alpha 峰值 .32</span>
         </div>
       </div>
     </section>
 
     <section class="glass-card solids">
-      <h2>保持实色的元素</h2>
-      <p>内容可读性与点击辨识度优先——这些元素不上玻璃：</p>
+      <h2>保持实色的交互元素</h2>
+      <p>可读性与可点击辨识度优先，且保证 ≥ 44px 触摸热区——这些元素不上玻璃：</p>
       <div class="solid-row">
-        <button class="btn-solid" type="button">实色按钮</button>
-        <input class="input-solid" type="text" placeholder="实色输入框">
+        <button class="btn-solid" id="modalBtnInline" type="button">打开 L3 玻璃弹窗 + Scrim</button>
+        <input class="input-solid" type="text" placeholder="实色输入框（高对比度）">
         <span class="badge-solid">实色标签</span>
       </div>
     </section>
 
     <section class="glass-card table-card">
-      <h2>玻璃化判定表（节选）</h2>
-      <p>大容器玻璃化、小交互元素保持实色，是两条成熟规律的合流：</p>
+      <h2>4 级 Z 轴材质判定表</h2>
+      <p>按元素背后的视觉噪声与层级职责分配材质，而非一刀切全上模糊：</p>
       <table class="verdict">
         <thead>
-          <tr><th>元素类型</th><th>玻璃化</th><th>理由</th></tr>
+          <tr><th>元素类型</th><th>层级策略</th><th>理由</th></tr>
         </thead>
         <tbody>
-          <tr><td>主卡片 / 面板</td><td class="yes">✅</td><td>玻璃感最集中体现</td></tr>
-          <tr><td>导航栏 / 底部栏</td><td class="yes">✅</td><td>半透明悬浮，视觉层次清晰</td></tr>
-          <tr><td>弹窗 / Modal</td><td class="yes">✅</td><td>浮层与玻璃质感天然契合</td></tr>
-          <tr><td>按钮</td><td class="no">❌</td><td>可点击辨识度</td></tr>
-          <tr><td>搜索框 / 输入框</td><td class="no">❌</td><td>内容可读性优先</td></tr>
-          <tr><td>表格 / 列表行</td><td class="no">❌</td><td>大量文字需要清晰对比度</td></tr>
+          <tr><td>卡片内子分组 / 列表项</td><td class="slot-lbl">L0 轻槽（无模糊）</td><td>防嵌套 Backdrop Root 失效与滚动掉帧</td></tr>
+          <tr><td>主卡片 / 核心面板</td><td class="yes">L1 高透玻璃 ✅</td><td>背后是光斑，暗色 alpha 严格 .12–.35</td></tr>
+          <tr><td>顶栏 / 底栏 / 侧边栏</td><td class="yes">L2 中透玻璃 ✅</td><td>背后会滚过正文，暗色 alpha .30–.55</td></tr>
+          <tr><td>弹窗 / Modal / Drawer</td><td class="yes">L3 玻璃 + Scrim ✅</td><td>靠暗化遮罩压噪，本体维持高透</td></tr>
+          <tr><td>按钮 / 输入框 / 标签 / 表格行</td><td class="no">保持实色 ❌</td><td>可点击辨识度与密集文字可读性优先</td></tr>
         </tbody>
       </table>
     </section>
@@ -468,9 +688,26 @@
       glassify · MIT License ·
       <a href="https://github.com/solplum/glassify">GitHub 仓库</a> ·
       <a href="https://github.com/solplum/glassify/blob/master/SKILL.md">SKILL.md 配方全文</a><br>
-      暗色铁律：fill alpha .12–.35 · blur ≥ 24 · 光泽折进 background · 背景光斑必须又大又亮
+      暗色铁律：fill alpha .12–.35 · blur ≥ 24 · backdrop-saturate ≥ 1.6 · OKLCH 低明高色光斑 · 4 级 Z 轴材质
     </footer>
   </main>
+
+  <div class="glass-modal-root" id="demoModal" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle" hidden>
+    <div class="glass-scrim" id="demoScrim" aria-hidden="true"></div>
+    <div class="glass-overlay">
+      <div class="modal-header">
+        <h2 id="demoModalTitle" style="font-size:19px">L3 弹窗 + Scrim 遮罩实证</h2>
+        <button class="theme-btn" id="closeModalBtn" type="button" aria-label="关闭弹窗">关闭</button>
+      </div>
+      <div class="modal-body">
+        <p>弹窗浮于密集页面文字之上时，如果硬把弹窗 alpha 拉到 .85 会失去玻璃感，不加遮罩又会被底层文字刺穿可读性。</p>
+        <p>正确解法是用 <code>.glass-scrim</code>（暗化 + 轻模糊）压低底层噪声，让 <code>.glass-overlay</code> 维持高透且正文清晰。按 <strong>Esc</strong> 或点击遮罩即可关闭。</p>
+      </div>
+      <div class="solid-row">
+        <button class="btn-solid" id="confirmModalBtn" type="button">实色主操作按钮</button>
+      </div>
+    </div>
+  </div>
 
 <script>
   (function () {
@@ -482,14 +719,26 @@
       : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
     function apply(theme) {
+      document.documentElement.dataset.theme = theme;
       document.body.dataset.theme = theme;
-      btn.textContent = theme === 'dark' ? '☀️ 亮色' : '🌙 暗色';
+      btn.textContent = theme === 'dark' ? '☀ 亮色' : '☾ 暗色';
       try { localStorage.setItem('glassify-theme', theme); } catch (e) {}
     }
     apply(initial);
     btn.addEventListener('click', function () {
-      apply(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
+      apply(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
     });
+
+    var modal = document.getElementById('demoModal');
+    var scrim = document.getElementById('demoScrim');
+    var openBtns = [document.getElementById('modalBtn'), document.getElementById('modalBtnInline')];
+    var closeBtns = [document.getElementById('closeModalBtn'), document.getElementById('confirmModalBtn')];
+    function openModal() { modal.hidden = false; closeBtns[0].focus(); }
+    function closeModal() { modal.hidden = true; }
+    openBtns.forEach(function (b) { if (b) b.addEventListener('click', openModal); });
+    closeBtns.forEach(function (b) { if (b) b.addEventListener('click', closeModal); });
+    if (scrim) scrim.addEventListener('click', closeModal);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
   })();
 </script>
 </body>
